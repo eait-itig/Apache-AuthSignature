@@ -63,6 +63,14 @@ my @directives = (
 		errmsg		=> 'AuthSignatureOpaque value',
 	},
 	{
+		name		=> 'AuthSignatureOpaqueHandler',
+		func		=> __PACKAGE__ . '::OpaqueHandlerParam',
+		req_override	=> Apache2::Const::OR_AUTHCFG |
+		    Apache2::Const::RSRC_CONF,
+		args_how	=> Apache2::Const::TAKE1,
+		errmsg		=> 'AuthSignatureOpaqueHandler package',
+	},
+	{
 		name		=> 'AuthSignatureHeaders',
 		func		=> __PACKAGE__ . '::HeadersParam',
 		req_override	=> Apache2::Const::OR_AUTHCFG |
@@ -145,7 +153,15 @@ sub OpaqueParam {
 		$value = undef;
 	}
 
-	$self->{'opaque'} = $value;
+	$self->{'opaque'} = sub { return (Apache2::Const::OK, $value) };
+}
+
+sub OpaqueHandlerParam {
+	my ($self, $parms, $package) = @_;
+
+	eval "require $package" or die;
+
+	$self->{'opaque'} = \&{"$package\::handler"};
 }
 
 sub HeadersParam {
@@ -231,12 +247,19 @@ sub note_auth_failure($$$$) {
 	if (!defined $r->headers_in()->get($config->{'authz_header'})) {
 		my @tokens = ( sprintf("realm=\"%s\"", $r->auth_name) );
 
+		if (defined $config->{'opaque'}) {
+			my ($status, $opaque) = $config->{'opaque'}->{$r};
+			if ($status != Apache2::Const::DECLINED) {
+				if ($status != Apache2::Const::OK) {
+					return $status;
+				}
+				push @tokens, sprintf("opaque=\"%s\"", $opaque);
+			}
+		}
+
 		if (scalar @{ $config->{'headers'} }) {
 			my @headers = map { lc } @{ $config->{'headers'} };
 			push @tokens, sprintf("headers=\"%s\"", join(' ', @headers));
-		}
-		if (defined $config->{'opaque'}) {
-			push @tokens, sprintf("opaque=\"%s\"", $config->{'opaque'});
 		}
 
 		my $header = 'Signature ' . join(',', @tokens);
@@ -324,11 +347,17 @@ sub handler {
 		    InvalidHeaderError, 'signature was not specified');
 	}
 
-	if (defined $params{'opaque'} &&
-	    defined $config->{'opaque'} &&
-	    $params{'opaque'} ne $config->{'opaque'}) {
-		return note_auth_failure($r, $config,
-		    InvalidHeaderError, 'opaque value mismatch');
+	if (defined $params{'opaque'} && defined $config->{'opaque'}) {
+		my ($status, $opaque) = $config->{'opaque'}->($r, $params{'opaque'});
+		if ($status != Apache2::Const::DECLINED) {
+			if ($status != Apache2::Const::OK) {
+				return $status;
+			}
+			if ($params{'opaque'} ne $opaque) {
+				return note_auth_failure($r, $config,
+				    InvalidHeaderError, 'opaque value mismatch');
+			}
+		}
 	}
 
 	my ($keyType, $algType) = split(/-/, lc($params{'algorithm'}), 2);
