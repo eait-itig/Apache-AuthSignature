@@ -171,9 +171,11 @@ sub HeadersParam {
 }
 
 sub KeyHandlerParam {
-	my ($self, $parms, $class) = @_;
+	my ($self, $parms, $package) = @_;
 
-	$self->{'key_handler'} = $class;
+	eval "require $package" or die;
+
+	$self->{'key_handler'} = \&{"$package\::handler"};
 }
 
 sub verifyRSA {
@@ -419,7 +421,7 @@ sub handler {
 	}
 
 	my ($keyStatus, $user, $key) =
-	    $handler->handler($r, $keyType, $params{'keyId'});
+	    $handler->($r, $keyType, $params{'keyId'});
 	if ($keyStatus != Apache2::Const::OK) {
 		return Apache2::Const::AUTH_REQUIRED;
 	}
