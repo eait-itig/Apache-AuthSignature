@@ -236,6 +236,7 @@ sub handler {
 	my $config = {
 		'authz_header'	=> 'authorization',
 		'wauth_header'	=> 'WWW-Authenticate',
+		'clock_skew'	=> 300,
 	};
 	$config = config_merge($config, Apache2::Module::get_config(__PACKAGE__,
 	    $r->server(), $r->per_dir_config()));
@@ -250,7 +251,6 @@ sub handler {
 
 	my $headers = $config->{'headers'} ||
 	    [ $headers_in->{'x-date'} ? 'x-date' : 'date' ];
-	my $clock_skew = $config->{'clock_skew'} || 300;
 
 	my $authz = $headers_in->{ $config->{'authz_header'} };
 	if (!defined $authz) {
@@ -343,10 +343,10 @@ sub handler {
 		my $date = APR::Date::parse_rfc($headers_in->{'x-date'} ||
 		    $headers_in->{'date'});
 		my $skew = abs($r->request_time - $date);
-		if ($skew > $clock_skew) {
+		if ($skew > $config->{'clock_skew'}) {
 			return note_auth_failure($r, $config, ExpiredRequestError,
 			    sprintf("clock skew of %u was greater than %us",
-			    $skew, $clock_skew));
+			    $skew, $config->{'clock_skew'}));
 		}
 	}
 
