@@ -308,7 +308,7 @@ sub handler {
 	if (!$params{'headers'}) {
 		$params{'headers'} = [ defined $headers_in->{'x-date'} ? 'x-date' : 'date' ];
 	} else {
-		$params{'headers'} = split(/ /, $params{'headers'});
+		$params{'headers'} = [ split(/ /, $params{'headers'}) ];
 	}
 
 	if (!$params{'keyId'}) {
