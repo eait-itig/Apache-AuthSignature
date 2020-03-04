@@ -100,7 +100,7 @@ sub options_merge {
 	$options{'headers'} = scalar @{ $add->{'headers'} } ?
 	    $add->{'headers'} : $base->{'headers'};
 
-	return bless \%options, ref($base);
+	return bless \%options, ref($add);
 }
 
 sub DIR_MERGE { return options_merge(@_); }
