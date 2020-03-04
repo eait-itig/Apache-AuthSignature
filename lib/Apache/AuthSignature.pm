@@ -228,7 +228,7 @@ sub note_auth_failure($$$$) {
 	$r->err_headers_out->add('AuthSignatureErrorCode' => $code);
 	$r->err_headers_out->add('AuthSignatureError' => $msg);
 
-	if (!defined $r->headers_in($config->{'authz_header'})) {
+	if (!defined $r->headers_in()->get($config->{'authz_header'})) {
 		my @tokens = ( sprintf("realm=\"%s\"", $r->auth_name) );
 
 		if (scalar @{ $config->{'headers'} }) {
