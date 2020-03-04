@@ -63,14 +63,6 @@ my @directives = (
 		errmsg		=> 'AuthSignatureHeaders header ...',
 	},
 	{
-		name		=> 'AuthSignatureOpaque',
-		func		=> __PACKAGE__ . '::OpaqueParam',
-		req_override	=> Apache2::Const::OR_AUTHCFG |
-		    Apache2::Const::RSRC_CONF,
-		args_how	=> Apache2::Const::TAKE1,
-		errmsg		=> 'AuthSignatureOpaque package',
-	},
-	{
 		name		=> 'AuthSignatureKeyHandler',
 		func		=> __PACKAGE__ . '::KeyHandlerParam',
 		req_override	=> Apache2::Const::OR_AUTHCFG |
@@ -88,7 +80,6 @@ sub options_create {
 		'clock_skew' => undef,
 		'authz_header' => undef,
 		'wauth_header' => undef,
-		'opaque' => undef,
 		'key_handler' => undef,
 		'headers' => [],
 	}, $class;
@@ -101,7 +92,7 @@ sub options_merge {
 	my ($base, $add) = @_;
 	my %options;
 
-	my @defs = ('clock_skew', 'authz_header', 'wauth_header', 'opaque', 'key_handler');
+	my @defs = ('clock_skew', 'authz_header', 'wauth_header', 'key_handler');
 	foreach my $def (@defs) {
 		$options{$def} = $add->{$def} || $base->{$def};
 	}
@@ -131,17 +122,6 @@ sub ClockSkewParam {
 
 sub AuthzHeaderParam {
 	my ($self, $parms, $header) = @_;
-
-	$self->{'authz_header'} = $header;
-}
-
-sub OpaqueParamParam {
-	my ($self, $parms, $opaque) = @_;
-
-	if ($opaque =~ /"/) {
-		# XXX this could be more comprehensive
-		die "opaque value contains invalid characters";
-	}
 
 	$self->{'authz_header'} = $header;
 }
@@ -226,20 +206,16 @@ sub note_auth_failure($$$$) {
 	$r->err_headers_out->add('AuthSignatureErrorCode' => $code);
 	$r->err_headers_out->add('AuthSignatureError' => $msg);
 
-	if (!defined $r->headers_in($config->{'authz_header'}) {
+	if (!defined $r->headers_in($config->{'authz_header'})) {
 		my @tokens = ( sprintf("realm=\"%s\"", $r->auth_name) );
 
 		if (scalar @{ $config->{'headers'} }) {
 			my @headers = map { sprintf "(%s)", lc($_) } @{ $config->{'headers'} };
 			push @tokens, sprintf("headers=\"%s\"", join(' ', @headers));
 		}
-		if (defined $config->{'opaque'}) {
-			push @tokens, sprintf("opaque=\"%s\"", $config->{'opaque'});
-		}
 
-		$authn = 'Signature ' . join(',', @tokens);
-
-		$r->err_headers_out->add('WWW-Authenticate' => $authn);
+		my $header = 'Signature ' . join(',', @tokens);
+		$r->err_headers_out->add($config->{'wauth_header'} => $header);
 	}
 
 	return Apache2::Const::AUTH_REQUIRED;
@@ -262,7 +238,7 @@ sub handler {
 		'wauth_header'	=> 'WWW-Authenticate',
 	};
 	$config = config_merge($config, Apache2::Module::get_config(__PACKAGE__,
-	    $r->server(), $r->per_dir_config());
+	    $r->server(), $r->per_dir_config()));
 
 	my $handler = $config->{'key_handler'};
 	if (!defined $handler) {
@@ -342,12 +318,6 @@ sub handler {
 			$value = $params{'keyId'};
 		} elsif ($key eq '(algorithm)') {
 			$value = $params{'algorithm'};
-		} elsif ($key eq '(opaque)') {
-			if (!$params{'opaque'}) {
-				return note_auth_failure($r, $config,
-				    InvalidHeaderError, 'opaque parameter was not specified');
-			}
-			$value = $params{'opaque'};
 		} else {
 			$value = $headers_in->{$key};
 			if (!defined $value) {
