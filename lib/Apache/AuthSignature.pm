@@ -210,7 +210,7 @@ sub note_auth_failure($$$$) {
 		my @tokens = ( sprintf("realm=\"%s\"", $r->auth_name) );
 
 		if (scalar @{ $config->{'headers'} }) {
-			my @headers = map { sprintf "(%s)", lc($_) } @{ $config->{'headers'} };
+			my @headers = map { lc } @{ $config->{'headers'} };
 			push @tokens, sprintf("headers=\"%s\"", join(' ', @headers));
 		}
 
