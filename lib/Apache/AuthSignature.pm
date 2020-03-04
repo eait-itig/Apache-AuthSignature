@@ -76,7 +76,7 @@ my @directives = (
 		req_override	=> Apache2::Const::OR_AUTHCFG |
 		    Apache2::Const::RSRC_CONF,
 		args_how	=> Apache2::Const::TAKE1,
-		errmsg		=> 'AuthSignatureKeyHandler Pacakge',
+		errmsg		=> 'AuthSignatureKeyHandler package',
 	},
 );
 
