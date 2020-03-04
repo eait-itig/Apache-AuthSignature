@@ -234,7 +234,7 @@ sub handler {
 	}
 
 	my $config = {
-		'authz_header'	=> 'authorization',
+		'authz_header'	=> 'Authorization',
 		'wauth_header'	=> 'WWW-Authenticate',
 		'clock_skew'	=> 300,
 	};
