@@ -263,7 +263,7 @@ sub handler {
 		'wauth_header'	=> 'WWW-Authenticate',
 		'clock_skew'	=> 300,
 	};
-	$config = config_merge($config, Apache2::Module::get_config(__PACKAGE__,
+	$config = options_merge($config, Apache2::Module::get_config(__PACKAGE__,
 	    $r->server(), $r->per_dir_config()));
 
 	my $handler = $config->{'key_handler'};
