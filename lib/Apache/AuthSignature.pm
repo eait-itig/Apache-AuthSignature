@@ -361,7 +361,6 @@ sub handler {
 		return Apache2::Const::AUTH_REQUIRED;
 	}
 
-	$r->auth_type('Signature');
 	$r->user($user);
 	return Apache2::Const::OK;
 }
