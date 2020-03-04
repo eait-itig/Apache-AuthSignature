@@ -55,6 +55,14 @@ my @directives = (
 		errmsg		=> 'AuthSignatureWAuthHeader header',
 	},
 	{
+		name		=> 'AuthSignatureOpaque',
+		func		=> __PACKAGE__ . '::OpaqueParam',
+		req_override	=> Apache2::Const::OR_AUTHCFG |
+		    Apache2::Const::RSRC_CONF,
+		args_how	=> Apache2::Const::TAKE1,
+		errmsg		=> 'AuthSignatureOpaque value',
+	},
+	{
 		name		=> 'AuthSignatureHeaders',
 		func		=> __PACKAGE__ . '::HeadersParam',
 		req_override	=> Apache2::Const::OR_AUTHCFG |
@@ -80,6 +88,7 @@ sub options_create {
 		'clock_skew' => undef,
 		'authz_header' => undef,
 		'wauth_header' => undef,
+		'opaque' => undef,
 		'key_handler' => undef,
 		'headers' => [],
 	}, $class;
@@ -92,7 +101,7 @@ sub options_merge {
 	my ($base, $add) = @_;
 	my %options;
 
-	my @defs = ('clock_skew', 'authz_header', 'wauth_header', 'key_handler');
+	my @defs = ('clock_skew', 'authz_header', 'wauth_header', 'opaque', 'key_handler');
 	foreach my $def (@defs) {
 		$options{$def} = $add->{$def} || $base->{$def};
 	}
@@ -124,6 +133,19 @@ sub AuthzHeaderParam {
 	my ($self, $parms, $header) = @_;
 
 	$self->{'authz_header'} = $header;
+}
+
+sub OpaqueParam {
+	my ($self, $parms, $value) = @_;
+
+	if ($value =~ /"\n\r/) {
+		die "invalid characters in opaque value";
+	}
+	if ($value eq '') {
+		$value = undef;
+	}
+
+	$self->{'opaque'} = $value;
 }
 
 sub HeadersParam {
@@ -213,6 +235,9 @@ sub note_auth_failure($$$$) {
 			my @headers = map { lc } @{ $config->{'headers'} };
 			push @tokens, sprintf("headers=\"%s\"", join(' ', @headers));
 		}
+		if (defined $config->{'opaque'}) {
+			push @tokens, sprintf("opaque=\"%s\"", $config->{'opaque'});
+		}
 
 		my $header = 'Signature ' . join(',', @tokens);
 		$r->err_headers_out->add($config->{'wauth_header'} => $header);
@@ -299,6 +324,13 @@ sub handler {
 		    InvalidHeaderError, 'signature was not specified');
 	}
 
+	if (defined $params{'opaque'} &&
+	    defined $config->{'opaque'} &&
+	    $params{'opaque'} ne $config->{'opaque'}) {
+		return note_auth_failure($r, $config,
+		    InvalidHeaderError, 'opaque value mismatch');
+	}
+
 	my ($keyType, $algType) = split(/-/, lc($params{'algorithm'}), 2);
 	if (!defined $algType || !defined $algorithms{$keyType}) {
 		return note_auth_failure($r, $config, InvalidHeaderError,
@@ -318,6 +350,13 @@ sub handler {
 			$value = $params{'keyId'};
 		} elsif ($key eq '(algorithm)') {
 			$value = $params{'algorithm'};
+		} elsif ($key eq '(opaque)') {
+			if (!defined $params{'opaque'}) {
+				return note_auth_failure($r, $config,
+				    InvalidHeaderError,
+				    'opaque was not specified');
+			}
+			$value = $params{'opaque'};
 		} else {
 			$value = $headers_in->{$key};
 			if (!defined $value) {
