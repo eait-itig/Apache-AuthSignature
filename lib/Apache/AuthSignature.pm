@@ -271,25 +271,8 @@ sub note_auth_failure($$$$) {
 	return Apache2::Const::AUTH_REQUIRED;
 }
 
-sub handler {
-	my ($r) = @_;
-
-	if ($r->auth_type ne 'Signature') {
-		#$r->log_error(sprintf "ap_auth_type %s", $r->auth_type);
-		return Apache2::Const::DECLINED;
-	}
-	if (!defined $r->auth_name) {
-		$r->log_error(sprintf "need AuthName: %s", $r->uri);
-		return Apache2::Const::SERVER_ERROR;
-	}
-
-	my $config = {
-		'authz_header'	=> 'Authorization',
-		'wauth_header'	=> 'WWW-Authenticate',
-		'clock_skew'	=> 300,
-	};
-	$config = options_merge($config, Apache2::Module::get_config(__PACKAGE__,
-	    $r->server(), $r->per_dir_config()));
+sub AuthSignatureHandler {
+	my ($r, $config) = @_;
 
 	my $handler = $config->{'key_handler'};
 	if (!defined $handler) {
@@ -433,4 +416,27 @@ sub handler {
 
 	$r->user($user);
 	return Apache2::Const::OK;
+}
+
+sub handler {
+	my ($r) = @_;
+
+	if ($r->auth_type ne 'Signature') {
+		#$r->log_error(sprintf "ap_auth_type %s", $r->auth_type);
+		return Apache2::Const::DECLINED;
+	}
+	if (!defined $r->auth_name) {
+		$r->log_error(sprintf "need AuthName: %s", $r->uri);
+		return Apache2::Const::SERVER_ERROR;
+	}
+
+	my $config = {
+		'authz_header'	=> 'Authorization',
+		'wauth_header'	=> 'WWW-Authenticate',
+		'clock_skew'	=> 300,
+	};
+	$config = options_merge($config, Apache2::Module::get_config(__PACKAGE__,
+	    $r->server(), $r->per_dir_config()));
+
+	return AuthSignatureHandler($r, $config);
 }
