@@ -31,6 +31,43 @@ AuthName "EAIT Source"
 Require valid-user
 ```
 
+### AuthSignatureKeyHandler
+
+Specifies the name of the package that handles mapping key types
+and key identifiers to a username and an SSH public key. See "Key
+Handler" below for detail.
+
+### AuthSignatureClockSkew
+
+### AuthSignatureAuthzHeader
+
+Specifies an alternate name for the `Authorization` header. By
+default the module uses `Authorization`.
+
+### AuthSignatureWAuthHeader
+
+Specifies an alternate name for the `WWW-Authenticate` header the
+server sends to an unauthenticated client. By defualt it uses
+`WWW-Authenticate`.
+
+### AuthSignatureOpaque
+
+Specifies an opaque value for use in `WWW-Authenticate` headers,
+and to expect from the client in `Authorization` headers. By default
+there is no opaque value used.
+
+### AuthSignatureOpaqueHandler
+
+Specifies a handler package that will provide a custom opaque value
+for the request.
+
+### AuthSignatureHeaders
+
+Specifies a list of headers and pseudo-headers that must be signed
+by the client to successfully authenticate. The list is also provided
+to unauthenticated clients in the `WWW-Authenticate` header. By
+default only the `Date` header is required to be signed by clients.
+
 ## Key Handler
 
 Apache::AuthSignature calls a `handler` subroutine in the package
@@ -86,4 +123,20 @@ sub handler {
 }
 
 1;
+```
+
+# Integration with other authentication schemes.
+
+Apache HTTPd only supports having a single authentication provider
+configured at a time, which means it is difficult to support both
+Signature and another type such as Basic or Digest concurrently.
+Custom authentication types that combine the AuthSignature functionality
+with other authentication types can be written in Perl. To support
+that, the module provides a `AuthSignatureHandler` subroutine that
+can be called from another module. The other module must provide
+configuration for AuthSignature from code, it doesn't support use
+of the configuration directives.
+
+```
+put some perl here
 ```
