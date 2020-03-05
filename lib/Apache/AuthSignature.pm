@@ -272,7 +272,14 @@ sub note_auth_failure($$$$) {
 }
 
 sub AuthSignatureHandler {
-	my ($r, $config) = @_;
+	my ($r, $options) = @_;
+
+	my $config = options_merge({
+		'authz_header'	=> 'Authorization',
+		'wauth_header'	=> 'WWW-Authenticate',
+		'clock_skew'	=> 300,
+		'headers'	=> [ ],
+	}, $options);
 
 	my $handler = $config->{'key_handler'};
 	if (!defined $handler) {
@@ -430,14 +437,6 @@ sub handler {
 		return Apache2::Const::SERVER_ERROR;
 	}
 
-	my $config = {
-		'authz_header'	=> 'Authorization',
-		'wauth_header'	=> 'WWW-Authenticate',
-		'clock_skew'	=> 300,
-		'headers'	=> [ ],
-	};
-	$config = options_merge($config, Apache2::Module::get_config(__PACKAGE__,
+	return AuthSignatureHandler($r, Apache2::Module::get_config(__PACKAGE__,
 	    $r->server(), $r->per_dir_config()));
-
-	return AuthSignatureHandler($r, $config);
 }
