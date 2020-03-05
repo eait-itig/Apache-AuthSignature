@@ -43,7 +43,7 @@ header.
 
 An example key handler package is:
 
-```{perl}
+```perl
 package Custom::KeyHandler;
 
 use Apache2::RequestRec;
