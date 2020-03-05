@@ -16,7 +16,7 @@ module, and therefore tries to support configuration via directives
 in the web server configuration file. The main exception to this
 is users of the module must provide (ie, write) a perl module that
 maps the keyIds in Signature Authorization headers to a username
-and SSH public key. In the example below, the Key 
+and SSH public key.
 
 The following demonstrates the basic usage of the module:
 
