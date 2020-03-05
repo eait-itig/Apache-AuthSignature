@@ -112,7 +112,7 @@ my $keys = {
 		},
 		'/user2/keys/[fingerprint]' => {
 			'u' => 'usernom',
-			'k' => 'ssh-rsa ...
+			'k' => 'ssh-rsa ...',
 		},
 	},
 	'ed25519' => {
