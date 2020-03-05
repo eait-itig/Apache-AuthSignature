@@ -250,7 +250,7 @@ sub note_auth_failure($$$$) {
 		my @tokens = ( sprintf("realm=\"%s\"", $r->auth_name) );
 
 		if (defined $config->{'opaque'}) {
-			my ($status, $opaque) = $config->{'opaque'}->{$r};
+			my ($status, $opaque) = $config->{'opaque'}->($r);
 			if ($status != Apache2::Const::DECLINED) {
 				if ($status != Apache2::Const::OK) {
 					return $status;
@@ -434,6 +434,7 @@ sub handler {
 		'authz_header'	=> 'Authorization',
 		'wauth_header'	=> 'WWW-Authenticate',
 		'clock_skew'	=> 300,
+		'headers'	=> [ ],
 	};
 	$config = options_merge($config, Apache2::Module::get_config(__PACKAGE__,
 	    $r->server(), $r->per_dir_config()));
