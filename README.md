@@ -27,7 +27,7 @@ PerlLoadModule Custom::KeyHandler
 PerlAuthenHandler Apache::AuthSignature
 AuthSignatureKeyHandler Custom::KeyHandler
 AuthType Signature
-AuthName "EAIT Source"
+AuthName "HTTP Signature Auth protected area"
 Require valid-user
 ```
 
