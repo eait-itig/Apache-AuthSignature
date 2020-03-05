@@ -50,6 +50,12 @@ Specifies an alternate name for the `WWW-Authenticate` header the
 server sends to an unauthenticated client. By defualt it uses
 `WWW-Authenticate`.
 
+eg:
+
+```
+AuthSignatureWAauthHeader X-WWW-Authenticate
+```
+
 ### AuthSignatureOpaque
 
 Specifies an opaque value for use in `WWW-Authenticate` headers,
@@ -67,6 +73,12 @@ Specifies a list of headers and pseudo-headers that must be signed
 by the client to successfully authenticate. The list is also provided
 to unauthenticated clients in the `WWW-Authenticate` header. By
 default only the `Date` header is required to be signed by clients.
+
+eg:
+
+```
+AuthSignatureHeaders date host (request-target) (keyid)
+```
 
 ## Key Handler
 
